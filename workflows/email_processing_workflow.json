@@ -1,0 +1,85 @@
+{
+    "name": "Email Processing Workflow",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "process-emails",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "email-processing"
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForAllItems",
+                "language": "python",
+                "code": "import sys\nimport os\nimport json\n\n# Add path to shared utilities\nsys.path.insert(0, r'C:\\Users\\dheer\\OneDrive\\Desktop\\projects\\Accrual_Automation_Internal_Trial-main\\n8n_implementation')\n\nfrom shared_utils.google_auth import get_google_services\nfrom shared_utils.email_helpers import get_company_info, build_processed_label_name, normalize_name\nfrom shared_utils.file_helpers import compute_hash, build_updated_filename, to_float\nfrom shared_utils.gemini_client import analyze_document_with_gemini\nimport base64\nimport time\nfrom datetime import datetime\nimport pytz\nfrom googleapiclient.http import MediaInMemoryUpload\n\n# Get input data\ninput_data = _input.all()[0].json\nlabel_names = input_data.get('label_name', [])\n\n# Load configurations\nconfig_path = r'C:\\Users\\dheer\\OneDrive\\Desktop\\projects\\Accrual_Automation_Internal_Trial-main\\app'\nwith open(os.path.join(config_path, 'company_aliases.json')) as f:\n    aliases_data = json.load(f)\nwith open(os.path.join(config_path, 'entity_folder_structures.json')) as f:\n    folder_structure_data = json.load(f)\n\n# Load .env\nfrom dotenv import load_dotenv\nload_dotenv(r'C:\\Users\\dheer\\OneDrive\\Desktop\\projects\\Accrual_Automation_Internal_Trial-main\\n8n_implementation\\.env')\n\nGEMINI_API_KEY = os.getenv('GEMINI_API_KEY')\nROOT_FOLDER_ID = os.getenv('ROOT_FOLDER_ID')\n\n# Get Google services\ngmail, sheets, drive, creds = get_google_services()\n\nresults = []\n\nfor label_name in label_names:\n    result = {\n        'label': label_name,\n        'status': 'processing',\n        'threads_processed': 0,\n        'attachments_added': 0,\n        'skipped_files': []\n    }\n    results.append(result)\n\nreturn [{'json': {\n    'status': 'initialized',\n    'labels_to_process': label_names,\n    'config_loaded': True,\n    'gmail_authenticated': True\n}}]"
+            },
+            "id": "init-and-auth",
+            "name": "Initialize & Authenticate",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "runOnceForAllItems",
+                "language": "python",
+                "code": "import sys\nimport os\nimport json\nimport base64\nimport time\nfrom datetime import datetime\nimport pytz\nfrom googleapiclient.http import MediaInMemoryUpload\n\nsys.path.insert(0, r'C:\\Users\\dheer\\OneDrive\\Desktop\\projects\\Accrual_Automation_Internal_Trial-main\\n8n_implementation')\n\nfrom shared_utils.google_auth import get_google_services, find_or_create_folder, get_label_id, find_file_by_name, download_file, upload_or_update_file\nfrom shared_utils.email_helpers import get_company_info, build_processed_label_name, normalize_name\nfrom shared_utils.file_helpers import compute_hash, build_updated_filename, to_float, create_folder_hierarchy\nfrom shared_utils.gemini_client import analyze_document_with_gemini\n\n# Load environment\nfrom dotenv import load_dotenv\nload_dotenv(r'C:\\Users\\dheer\\OneDrive\\Desktop\\projects\\Accrual_Automation_Internal_Trial-main\\n8n_implementation\\.env')\n\nGEMINI_API_KEY = os.getenv('GEMINI_API_KEY')\nROOT_FOLDER_ID = os.getenv('ROOT_FOLDER_ID')\n\n# Load configs\nconfig_path = r'C:\\Users\\dheer\\OneDrive\\Desktop\\projects\\Accrual_Automation_Internal_Trial-main\\app'\nwith open(os.path.join(config_path, 'company_aliases.json')) as f:\n    aliases_data = json.load(f)\nwith open(os.path.join(config_path, 'entity_folder_structures.json')) as f:\n    folder_structure_data = json.load(f)\n\n# Get services\ngmail, sheets, drive, creds = get_google_services()\n\n# Get input\ninput_data = _input.all()[0].json\nlabel_names = input_data.get('labels_to_process', [])\n\nist = pytz.timezone('Asia/Kolkata')\nnow_ist = datetime.now(ist)\n\nALLOWED_MIME_TYPES = {\n    'image/png', 'image/jpeg', 'image/webp',\n    'application/pdf', 'image/heic', 'image/heif'\n}\n\nMAX_SIZE_BYTES = 20 * 1024 * 1024\n\nall_results = []\n\nfor label_name in label_names:\n    # Get label ID\n    label_id = get_label_id(gmail, f'{label_name}/Docs/Repo')\n    if not label_id:\n        all_results.append({\n            'label': label_name,\n            'status': 'error',\n            'message': 'Label not found'\n        })\n        continue\n    \n    # Get company info\n    company_info = get_company_info(aliases_data, label_name)\n    entity_type = company_info.get('entity_type', 'india')\n    \n    # Create folders\n    label_folder_id = find_or_create_folder(drive, label_name, ROOT_FOLDER_ID)\n    viable_repo_folder_id = find_or_create_folder(drive, '0. Viable Repo', label_folder_id)\n    docs_repo_id = find_or_create_folder(drive, '0. Docs Repo', viable_repo_folder_id)\n    metadata_id = find_or_create_folder(drive, '.metadata', viable_repo_folder_id)\n    \n    # Load duplicates\n    duplicates_file_name = f'{label_name.lower()}.json'\n    existing_file = find_file_by_name(drive, duplicates_file_name, metadata_id)\n    duplicates = {}\n    if existing_file:\n        content = download_file(drive, existing_file['id'])\n        duplicates = json.loads(content)\n    \n    # Get spreadsheet (assuming it exists)\n    # In production, you'd call find_or_create_spreadsheet here\n    spreadsheet_id = 'YOUR_SPREADSHEET_ID'  # Replace with actual logic\n    \n    # Get emails\n    threads_response = gmail.users().threads().list(userId='me', labelIds=[label_id]).execute()\n    threads = threads_response.get('threads', [])\n    \n    threads_processed = 0\n    attachments_added = 0\n    skipped_files = []\n    \n    processed_label_id = build_processed_label_name(gmail, label_name)\n    \n    for thread in threads:\n        thread_id = thread['id']\n        thread_data = gmail.users().threads().get(userId='me', id=thread_id, format='full').execute()\n        messages = thread_data.get('messages', [])\n        \n        for msg_data in messages:\n            msg_id = msg_data['id']\n            \n            if processed_label_id in msg_data.get('labelIds', []):\n                continue\n            \n            if label_id not in msg_data.get('labelIds', []):\n                continue\n            \n            payload = msg_data.get('payload', {})\n            headers = payload.get('headers', [])\n            meta = {h['name']: h['value'] for h in headers}\n            from_email = meta.get('From', 'N/A')\n            subject = meta.get('Subject', 'N/A')\n            \n            parts = payload.get('parts', [])\n            \n            for part in parts:\n                filename = part.get('filename')\n                mime_type = part.get('mimeType')\n                att_id = part.get('body', {}).get('attachmentId')\n                \n                if not filename or not att_id or mime_type not in ALLOWED_MIME_TYPES:\n                    continue\n                \n                # Download attachment\n                att = gmail.users().messages().attachments().get(\n                    userId='me', messageId=msg_id, id=att_id\n                ).execute()\n                file_data = base64.urlsafe_b64decode(att['data'].encode('UTF-8'))\n                \n                if len(file_data) > MAX_SIZE_BYTES:\n                    skipped_files.append({'filename': filename, 'reason': 'Too large'})\n                    continue\n                \n                # Check duplicates\n                file_hash = compute_hash(file_data)\n                if file_hash in duplicates:\n                    skipped_files.append({'filename': filename, 'reason': 'Duplicate'})\n                    continue\n                \n                # Analyze with Gemini\n                time.sleep(5)\n                try:\n                    documents = analyze_document_with_gemini(file_data, mime_type, GEMINI_API_KEY)\n                except Exception as e:\n                    skipped_files.append({'filename': filename, 'reason': str(e)})\n                    continue\n                \n                for doc in documents:\n                    # Build filename\n                    seller_name = normalize_name(doc.get('Seller Name', ''))\n                    buyer_name = doc.get('Buyer Name', '')\n                    company_names = [normalize_name(company_info.get('name', label_name))] + \\\n                                    [normalize_name(alias) for alias in company_info.get('aliases', [])]\n                    \n                    entity_for_filename = doc.get('Seller Name', '')\n                    if seller_name in company_names:\n                        entity_for_filename = buyer_name\n                    \n                    updated_filename = build_updated_filename(doc, entity_for_filename)\n                    ext = os.path.splitext(filename)[-1]\n                    updated_filename_with_ext = f'{updated_filename}{ext}'\n                    \n                    # Upload to Drive\n                    media = MediaInMemoryUpload(file_data, mimetype=mime_type, resumable=True)\n                    file_metadata = {'name': updated_filename_with_ext, 'parents': [docs_repo_id]}\n                    uploaded = drive.files().create(\n                        body=file_metadata, media_body=media,\n                        fields='id, webViewLink', supportsAllDrives=True\n                    ).execute()\n                    \n                    # TODO: Append to sheets (add your sheets logic here)\n                    \n                    attachments_added += 1\n                \n                # Save duplicate\n                duplicates[file_hash] = {\n                    'filename': filename,\n                    'processed_at': now_ist.strftime('%d-%m-%Y %H:%M:%S')\n                }\n                upload_or_update_file(drive, metadata_id, duplicates_file_name, json.dumps(duplicates, indent=2))\n            \n            # Modify labels\n            gmail.users().messages().modify(\n                userId='me', id=msg_id,\n                body={'addLabelIds': [processed_label_id], 'removeLabelIds': [label_id]}\n            ).execute()\n        \n        threads_processed += 1\n    \n    all_results.append({\n        'label': label_name,\n        'status': 'success',\n        'threads_processed': threads_processed,\n        'attachments_added': attachments_added,\n        'skipped_files': skipped_files\n    })\n\nreturn [{'json': {\n    'status': 'completed',\n    'results': all_results\n}}]"
+            },
+            "id": "process-emails",
+            "name": "Process All Emails",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Initialize & Authenticate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Initialize & Authenticate": {
+            "main": [
+                [
+                    {
+                        "node": "Process All Emails",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-05T14:17:00.000Z",
+    "versionId": "1"
+}

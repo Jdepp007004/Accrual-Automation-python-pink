@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Accrual Automation{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="text-center mb-12">
+    <h1 class="text-5xl font-bold mb-4">
+        <span class="bg-gradient-to-r from-pink-500 via-pink-400 to-rose-400 bg-clip-text text-transparent">
+            Welcome Back! 👋
+        </span>
+    </h1>
+    <p class="text-lg" style="color: var(--text-secondary);">
+        Your intelligent document processing assistant
+    </p>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Process Emails Card -->
+    <a href="/process-emails" class="card p-8 group cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+            <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-900 dark:to-pink-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i class="fas fa-envelope text-3xl text-pink-500"></i>
+            </div>
+            <i
+                class="fas fa-arrow-right text-pink-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Process Emails</h3>
+        <p style="color: var(--text-secondary);">Extract and organize documents from your Gmail inbox</p>
+    </a>
+
+    <!-- Manage Companies Card -->
+    <a href="/manage-companies" class="card p-8 group cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+            <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-rose-200 dark:from-rose-900 dark:to-rose-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i class="fas fa-building text-3xl text-rose-500"></i>
+            </div>
+            <i
+                class="fas fa-arrow-right text-rose-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Manage Companies</h3>
+        <p style="color: var(--text-secondary);">Add or update company aliases and configurations</p>
+    </a>
+
+    <!-- View Drive Card -->
+    <a href="https://drive.google.com" target="_blank" class="card p-8 group cursor-pointer">
+        <div class="flex items-center justify-between mb-4">
+            <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-fuchsia-100 to-fuchsia-200 dark:from-fuchsia-900 dark:to-fuchsia-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <i class="fab fa-google-drive text-3xl text-fuchsia-500"></i>
+            </div>
+            <i
+                class="fas fa-external-link-alt text-fuchsia-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Google Drive</h3>
+        <p style="color: var(--text-secondary);">View your processed and organized documents</p>
+    </a>
+</div>
+{% endblock %}

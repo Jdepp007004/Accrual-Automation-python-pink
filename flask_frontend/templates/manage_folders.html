@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Folder Structures - N8N Accrual Automation{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-folder-tree text-purple-600 mr-3"></i>Folder Structures
+    </h1>
+    <p class="text-gray-600">View entity-specific Google Drive folder hierarchies</p>
+</div>
+
+{% if error %}
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6" role="alert">
+    <i class="fas fa-exclamation-circle mr-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {% for entity_type, structure in structures.items() %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-flag mr-2 text-{{ 'blue' if entity_type == 'india' else 'green' }}-600"></i>
+            {{ entity_type | upper }} Entity
+        </h2>
+        <div class="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+            <pre class="text-sm text-gray-700 font-mono overflow-auto">{{ structure | tojson(indent=2) }}</pre>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+    <h3 class="font-bold text-blue-900 mb-3">
+        <i class="fas fa-lightbulb mr-2"></i>About Folder Structures
+    </h3>
+    <p class="text-blue-800 mb-2">
+        These folder structures define the Google Drive hierarchy that will be created for each company based on their
+        entity type.
+    </p>
+    <ul class="list-disc list-inside text-blue-800 space-y-1">
+        <li><strong>India entities:</strong> Use April-March financial year and include MCA, ROC, FEMA folders</li>
+        <li><strong>US entities:</strong> Use Jan-Dec calendar year with incorporation and board document folders</li>
+        <li>Folders are created automatically when processing emails for new companies</li>
+        <li>To modify structures, edit <code class="bg-blue-100 px-2 py-1 rounded">entity_folder_structures.json</code>
+        </li>
+    </ul>
+</div>
+{% endblock %}

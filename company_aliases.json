@@ -1,0 +1,123 @@
+{
+    "analogy": {
+        "aliases": [
+            "Artifact Designs LLP",
+            "Artifact Designs",
+            "Analogy",
+            "Analogy Designs"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Spacekayak Pvt Ltd": {
+        "aliases": [
+            "Spacekayak Technologies Private Limited",
+            "Spacekayak Technologies Pvt Ltd",
+            "Spacekayak Technologies",
+            "Spacekayak",
+            "Spacekayak Technologies PTE LTD",
+            "Spacekayak Technologies Inc",
+            "SPACE KAYAK TECHNOLOGIES (P) LIMITED",
+            "Spacekayak Inc"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Sparha": {
+        "aliases": [
+            "Sparha Advanced Aesthetic Studio",
+            "Sparha",
+            "Sparha Advanced Wellness Studio",
+            "Sparha Studio Indiranagar",
+            "Sparha Advanced",
+            "Sparha Aesthetics Advanced Studio",
+            "Dr Arti Singh",
+            "Sparha Advanced Aesthetic Studio Clinic"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Prime": {
+        "aliases": [
+            "Prime",
+            "Prime Epaq"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Humane": {
+        "aliases": [
+            "Humane",
+            "SD Humane Consulting LLP",
+            "Humane Consulting",
+            "Humane Consulting LLP",
+            "DWAAR FOUNDATION",
+            "Dwaar"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Small Town Folk": {
+        "aliases": [
+            "Small Town Folk",
+            "Small Town Folk Global Private Limited",
+            "Tasveerien Media LLP",
+            "STF",
+            "Small Town Folk",
+            "Tasveerien Media",
+            "Tasveerien",
+            "Small Town Folk Global Pvt Ltd"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Riffle Pvt Ltd": {
+        "aliases": [
+            "Riffle Pvt Ltd",
+            "Riffle Studio Private Limited",
+            "Riffle Studio Pvt Ltd",
+            "Riffle Studio",
+            "Riffle"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Intlo": {
+        "aliases": [
+            "Intlo",
+            "Intlo Solutions Private Limited",
+            "Intlo Solutions Pvt Ltd"
+        ],
+        "financial_year": "april-march",
+        "entity_type": "india"
+    },
+    "Moderate The Panel": {
+        "aliases": [
+            "Moderate The Panel",
+            "Moderate The Panel LLC",
+            "Moderate The Panel",
+            "MTP"
+        ],
+        "financial_year": "jan-dec",
+        "entity_type": "us"
+    },
+    "Spacekayak Inc": {
+        "aliases": [
+            "Spacekayak Inc",
+            "Spacekayak Incorporation",
+            "Spacekayak Technologies",
+            "Spacekayak"
+        ],
+        "financial_year": "jan-dec",
+        "entity_type": "us"
+    },
+    "Riffle Inc": {
+        "aliases": [
+            "Riffle Inc",
+            "Riffle Incorporation",
+            "Riffle"
+        ],
+        "financial_year": "jan-dec",
+        "entity_type": "us"
+    }
+}

@@ -1,0 +1,23 @@
+# Accrual Automation - Consolidated Requirements
+# All dependencies needed to run the unified application
+
+# Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# HTTP Client
+requests==2.31.0
+
+# Environment Management
+python-dotenv==1.0.0
+
+# Google APIs
+google-api-python-client==2.108.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
+
+# AI/ML
+google-generativeai==0.3.2
+
+# Timezone Support
+pytz==2023.3

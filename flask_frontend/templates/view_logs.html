@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}View Logs - N8N Accrual Automation{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">
+        <i class="fas fa-file-alt text-purple-600 mr-3"></i>Application Logs
+    </h1>
+    <p class="text-gray-600">Monitor system activity and troubleshoot issues</p>
+</div>
+
+{% if error %}
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6" role="alert">
+    <i class="fas fa-exclamation-circle mr-2"></i>{{ error }}
+</div>
+{% endif %}
+
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-terminal mr-2"></i>Recent Logs (Last 100 lines)
+        </h2>
+        <button onclick="location.reload()" class="btn-primary text-white font-bold py-2 px-4 rounded-lg text-sm">
+            <i class="fas fa-sync-alt mr-2"></i>Refresh
+        </button>
+    </div>
+
+    {% if logs %}
+    <div class="bg-gray-900 rounded-lg p-4 overflow-auto" style="max-height: 600px;">
+        <pre class="text-green-400 text-sm font-mono">{{ logs }}</pre>
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-gray-500">
+        <i class="fas fa-inbox text-6xl mb-4"></i>
+        <p class="text-lg">No logs available</p>
+        <p class="text-sm">Logs will appear here after processing activities</p>
+    </div>
+    {% endif %}
+
+    {% if log_files %}
+    <div class="mt-6">
+        <h3 class="font-bold text-gray-700 mb-2">Available Log Files:</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for file in log_files %}
+            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded text-sm">
+                <i class="fas fa-file mr-1"></i>{{ file }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+    <h3 class="font-bold text-yellow-900 mb-3">
+        <i class="fas fa-info-circle mr-2"></i>Log Information
+    </h3>
+    <ul class="list-disc list-inside text-yellow-800 space-y-1">
+        <li>Logs are located in the <code class="bg-yellow-100 px-2 py-1 rounded">logs/</code> directory</li>
+        <li>Each processing session creates timestamped log entries</li>
+        <li>For n8n workflow logs, check the n8n UI under "Executions"</li>
+        <li>Logs automatically refresh on page reload</li>
+    </ul>
+</div>
+{% endblock %}

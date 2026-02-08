@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Process Emails - Accrual Automation{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-4xl font-bold mb-2">
+        <span class="bg-gradient-to-r from-pink-500 to-rose-400 bg-clip-text text-transparent">
+            <i class="fas fa-envelope text-pink-500 mr-3"></i>Process Emails
+        </span>
+    </h1>
+    <p style="color: var(--text-secondary);">Select Gmail labels to extract and process documents</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Label Selection -->
+    <div class="lg:col-span-2">
+        <div class="card p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-tags text-pink-500 mr-2"></i>
+                Select Labels
+            </h2>
+
+            <form id="processForm" method="POST">
+                <div id="labelsContainer" class="space-y-3 max-h-96 overflow-y-auto mb-6 pr-2">
+                    <div class="flex items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+                        <span class="ml-3" style="color: var(--text-secondary);">Loading labels...</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-pink-100 dark:border-pink-900">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="selectAll"
+                            class="w-5 h-5 rounded border-pink-300 text-pink-500 focus:ring-pink-500">
+                        <span class="ml-2 font-medium">Select All</span>
+                    </label>
+
+                    <button type="submit" id="submitBtn" class="btn-primary text-white flex items-center" disabled>
+                        <i class="fas fa-play mr-2"></i>
+                        Start Processing
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="space-y-6">
+        <!-- Status Card -->
+        <div id="statusCard" class="card p-6 hidden">
+            <!-- Company Header -->
+            <div id="processingHeader"
+                class="mb-4 p-4 bg-gradient-to-r from-pink-100 to-rose-100 dark:from-pink-900/50 dark:to-rose-900/50 rounded-lg border border-pink-200 dark:border-pink-800">
+                <h3 class="font-bold text-lg flex items-center">
+                    <i class="fas fa-spinner fa-spin text-pink-500 mr-3"></i>
+                    <span>Processing: </span>
+                    <span id="currentEntity" class="ml-2 text-pink-600 dark:text-pink-400">Starting...</span>
+                </h3>
+            </div>
+
+            <!-- Terminal Output -->
+            <div class="bg-gray-900 rounded-lg p-4 font-mono text-sm max-h-96 overflow-y-auto shadow-inner"
+                id="logTerminal">
+                <div class="text-green-400"></div>
+            </div>
+        </div>
+
+        <!-- Tips Card -->
+        <div class="card p-6 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/30 dark:to-rose-900/30">
+            <h3 class="font-bold mb-3 flex items-center">
+                <i class="fas fa-info-circle text-pink-500 mr-2"></i>
+                Quick Tips
+            </h3>
+            <ul class="space-y-2 text-sm" style="color: var(--text-secondary);">
+                <li class="flex items-start">
+                    <i class="fas fa-check text-pink-400 mt-1 mr-2"></i>
+                    <span>Select parent labels to process all nested emails</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-pink-400 mt-1 mr-2"></i>
+                    <span>Supported formats: PDF, PNG, JPEG, HEIC</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-pink-400 mt-1 mr-2"></i>
+                    <span>Duplicates are automatically skipped</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check text-pink-400 mt-1 mr-2"></i>
+                    <span>Files are renamed based on content</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section (Hidden initially) -->
+<div id="resultsSection" class="mt-8 hidden">
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Processing Complete
+        </h2>
+        <div id="resultsContent"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const labelsContainer = document.getElementById('labelsContainer');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const submitBtn = document.getElementById('submitBtn');
+    const processForm = document.getElementById('processForm');
+    const statusCard = document.getElementById('statusCard');
+    const statusContent = document.getElementById('statusContent');
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContent = document.getElementById('resultsContent');
+
+    // Fetch labels on page load
+    fetch('/api/labels')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                labelsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-4xl text-pink-400 mb-3"></i>
+                        <p class="text-red-500">${data.error}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (data.labels.length === 0) {
+                labelsContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-inbox text-4xl text-pink-300 mb-3"></i>
+                        <p style="color: var(--text-secondary);">No labels found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            labelsContainer.innerHTML = data.labels.map(label => `
+                <label class="flex items-center p-3 rounded-xl border border-pink-100 dark:border-pink-900 hover:bg-pink-50 dark:hover:bg-pink-900/30 cursor-pointer transition-all group">
+                    <input type="checkbox" name="labels" value="${label}" class="label-checkbox w-5 h-5 rounded border-pink-300 text-pink-500 focus:ring-pink-500">
+                    <span class="ml-3 font-medium group-hover:text-pink-500 transition-colors">${label}</span>
+                </label>
+            `).join('');
+
+            updateSubmitButton();
+        })
+        .catch(error => {
+            labelsContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-wifi text-4xl text-pink-300 mb-3"></i>
+                    <p class="text-red-500">Failed to load labels</p>
+                </div>
+            `;
+        });
+
+    // Select all functionality
+    selectAllCheckbox.addEventListener('change', function () {
+        document.querySelectorAll('.label-checkbox').forEach(cb => cb.checked = this.checked);
+        updateSubmitButton();
+    });
+
+    // Update submit button state
+    labelsContainer.addEventListener('change', updateSubmitButton);
+
+    function updateSubmitButton() {
+        const checked = document.querySelectorAll('.label-checkbox:checked').length;
+        submitBtn.disabled = checked === 0;
+        submitBtn.innerHTML = checked > 0
+            ? `<i class="fas fa-play mr-2"></i>Process ${checked} Label${checked > 1 ? 's' : ''}`
+            : `<i class="fas fa-play mr-2"></i>Start Processing`;
+    }
+
+    // Form submission
+    processForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const selected = Array.from(document.querySelectorAll('.label-checkbox:checked')).map(cb => cb.value);
+
+        if (selected.length === 0) {
+            alert('Please select at least one label');
+            return;
+        }
+
+        // Show status and prepare terminal
+        statusCard.classList.remove('hidden');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        resultsSection.classList.add('hidden');
+
+        const logTerminal = document.getElementById('logTerminal');
+        const currentEntity = document.getElementById('currentEntity');
+        logTerminal.innerHTML = '';
+
+        try {
+            // Start processing and get session ID
+            const response = await fetch('/process-emails', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label_name: selected })
+            });
+
+            const data = await response.json();
+
+            if (!data.session_id) {
+                throw new Error(data.error || 'Failed to start processing');
+            }
+
+            // Connect to event stream
+            const eventSource = new EventSource(`/stream-logs/${data.session_id}`);
+
+            eventSource.onmessage = function (event) {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'header') {
+                    // Update header with current entity
+                    currentEntity.textContent = msg.entity;
+                } else if (msg.type === 'log') {
+                    // Append log message to terminal
+                    const logLine = document.createElement('div');
+                    logLine.textContent = msg.message;
+                    logLine.className = 'text-green-400 leading-relaxed';
+                    logTerminal.appendChild(logLine);
+                    // Auto-scroll to bottom
+                    logTerminal.scrollTop = logTerminal.scrollHeight;
+                } else if (msg.type === 'complete') {
+                    // Processing complete
+                    eventSource.close();
+                    statusCard.querySelector('h3').innerHTML = '<i class="fas fa-check-circle text-green-500 mr-2"></i>Complete!';
+
+                    // Show results
+                    resultsSection.classList.remove('hidden');
+                    resultsContent.innerHTML = formatResults(msg.results);
+
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Start Processing';
+                } else if (msg.type === 'error') {
+                    // Error occurred
+                    eventSource.close();
+                    statusCard.querySelector('h3').innerHTML = '<i class="fas fa-exclamation-circle text-red-500 mr-2"></i>Error';
+
+                    const errorLine = document.createElement('div');
+                    errorLine.textContent = `Error: ${msg.message}`;
+                    errorLine.className = 'text-red-400';
+                    logTerminal.appendChild(errorLine);
+
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Start Processing';
+                }
+            };
+
+            eventSource.onerror = function () {
+                eventSource.close();
+                const errorLine = document.createElement('div');
+                errorLine.textContent = 'Connection lost. Please check if processing completed.';
+                errorLine.className = 'text-red-400';
+                logTerminal.appendChild(errorLine);
+
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Start Processing';
+            };
+
+        } catch (error) {
+            statusCard.querySelector('h3').innerHTML = '<i class="fas fa-exclamation-circle text-red-500 mr-2"></i>Error';
+            logTerminal.innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Start Processing';
+        }
+    });
+
+    function formatResults(result) {
+        if (result.error) {
+            return `<p class="text-red-500">${result.error}</p>`;
+        }
+
+        if (!result.details) {
+            return `<p class="text-green-500">${result.message || 'Processing complete'}</p>`;
+        }
+
+        return result.details.map(detail => `
+            <div class="p-4 rounded-xl bg-pink-50 dark:bg-pink-900/30 mb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold">${detail.entity || detail.label}</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-medium ${detail.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                        ${detail.status}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm" style="color: var(--text-secondary);">
+                    <div><i class="fas fa-envelope text-pink-400 mr-1"></i> Threads: ${detail.threads_processed || 0}</div>
+                    <div><i class="fas fa-file text-pink-400 mr-1"></i> Files: ${detail.attachments_added || 0}</div>
+                </div>
+                ${detail.skipped_files && detail.skipped_files.length > 0 ? `
+                    <div class="mt-2 text-xs text-orange-500">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        ${detail.skipped_files.length} file(s) skipped
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+</script>
+{% endblock %}

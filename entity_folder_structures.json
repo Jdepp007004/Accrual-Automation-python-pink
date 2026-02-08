@@ -1,0 +1,25 @@
+{
+  "india": {
+    "0. Viable Repo": {
+      "0. Docs Repo": {}
+    },
+    "1. Company Related Docs (Governance, MCA & Legal Identity)": {
+      "1. IN_Founder Docs": { "0. Docs Repo": {} },
+      "2. IN_KYC": { "0. Docs Repo": {} },
+      "3. IN_MCA-ROC": { "0. Docs Repo": {} },
+      "4. IN_Incorporation-Governance": { "0. Docs Repo": {} },
+      "5. IN_RBI-Fema": { "0. Docs Repo": {} },
+      "6. IN_Trade-DGFT": { "0. Docs Repo": {} }
+    },
+    "2. Financial Related Docs (Accounting, Audit & Taxation)": {}
+    
+  },
+  "us": {
+    "0. Viable Repo": { "0. Docs Repo": {} },
+    "1. Company Related Docs": {
+      "1. US_Incorporation Docs": { "0. Docs Repo": {} },
+      "2. US_Board Documents": { "0. Docs Repo": {} }
+    },
+    "2. Financial Related Docs": { "0. Docs Repo": {} }
+  }
+}
